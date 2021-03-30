@@ -1,0 +1,14 @@
+{
+  "name": "myconsoleappneo4j",
+  "version": "1.0.0",
+  "description": "practice on neo4j for BD",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "DevilSAM",
+  "license": "ISC",
+  "dependencies": {
+    "neo4j-driver": "^4.2.3"
+  }
+}
