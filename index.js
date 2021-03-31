@@ -9,11 +9,11 @@ const session = driver.session({ database: 'neo4j', defaultAccessMode: neo4j.ses
 
 
 if (arg1.toLowerCase() == "directed_by") {
-    findDirectorsMovies(arg2, arg3)
+    universalFunc(1, arg2, arg3)
 } else if (arg1.toLowerCase() == 'worked_with') {
-    findWorkedWith(arg2, arg3)
+    universalFunc(2, arg2, arg3)
 } else if (arg1.toLowerCase() == 'actors_count') {
-    actorsCount();
+    universalFunc(3);
 } else {
     console.log(`Доступные команды:
     1. directed_by FIRST_NAME LAST_NAME (ex: directed_by Andy Wachowski)
@@ -21,72 +21,25 @@ if (arg1.toLowerCase() == "directed_by") {
     3. actors_count`)
 }
 
-function actorsCount() {
+function universalFunc(num, fname='', lname='') {
     // готовим запрос
+    sql = num == 1 ? `MATCH (mv:Movie)-[:DIRECTED]-(p:Person {name: "${fname} ${lname}"}) return mv;` 
+                    : (num == 2 ? `MATCH (pers:Person {name:"${fname} ${lname}"})-[*]->(m)<-[*]-(coWorker) WHERE pers <> coWorker RETURN DISTINCT coWorker.name;` 
+                    : `MATCH (pers:Person)-[:ACTED_IN]->(m:Movie) RETURN DISTINCT m.title, COUNT(pers.name);`)
     const readTxResultPromise = session.readTransaction(txc => {
-        let result = txc.run(`MATCH (pers:Person)-[:ACTED_IN]->(m:Movie) RETURN DISTINCT m.title, COUNT(pers.name);`)
+        let result = txc.run(sql)
         return result
     })
     // обработаем результат
     readTxResultPromise
     .then(result => {
         result.records.forEach( (el) => {
-            console.log(el._fields[0]+':',  el._fields[1]['low'])
-        })
-        if (result.records.length == 0) {
-            console.log('Нет результатов. Убедитесь, что данные введены верно.')
-        }
-    })
-    .catch(error => {
-        console.log(error)
-    })
-    .then(() => {
-        session.close()
-        driver.close()
-    })
-}
-
-
-
-
-function findWorkedWith(fname, lname) {
-    // готовим запрос
-    const readTxResultPromise = session.readTransaction(txc => {
-        let result = txc.run(`MATCH (pers:Person {name:"${fname} ${lname}"})-[*]->(m)<-[*]-(coWorker) WHERE pers <> coWorker RETURN DISTINCT coWorker.name;`)
-        return result
-    })
-    // обработаем результат
-    readTxResultPromise
-    .then(result => {
-        result.records.forEach( (el) => {
-            console.log(el._fields)
-        })
-        if (result.records.length == 0) {
-            console.log('Нет результатов. Убедитесь, что данные введены верно.')
-        }
-    })
-    .catch(error => {
-        console.log(error)
-    })
-    .then(() => {
-        session.close()
-        driver.close()
-    })
-}
-
-
-
-function findDirectorsMovies (fname, lname) {
-    // готовим запрос
-    const readTxResultPromise = session.readTransaction(txc => {
-        let result = txc.run(`MATCH (mv:Movie)-[:DIRECTED]-(p:Person {name: "${fname} ${lname}"}) return mv;`)
-        return result
-    })
-
-    readTxResultPromise
-    .then(result => {
-        result.records.forEach( (el) => {
-            console.log(el._fields[0]['properties']['title'])
+            if (num == 1)
+                console.log(el._fields[0]['properties']['title'])
+            else if (num == 2)
+                console.log(el._fields)
+            else
+                console.log(el._fields[0]+':',  el._fields[1]['low'])
         })
         if (result.records.length == 0) {
             console.log('Нет результатов. Убедитесь, что данные введены верно.')
